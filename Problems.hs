@@ -14,6 +14,7 @@ module Problems
 ) where  
 
 import Data.List
+import Data.Tuple
 
 
 -- Problem 1
@@ -112,4 +113,57 @@ pack' xs = consPack nestedList
 
 -- Problem 10
 -- Run-length encoding
+encode :: Eq a => [a] -> [(Int, a)]
+encode [] = []
+encode xs =
+    zip counts vals 
+    where
+        counts = map length $ group xs
+        vals = nub xs
+
+
+-- Problem 11
+-- Run-length encoding, if no duplicates it is simply copied into the result list
+data MRE a = Single a | Multiple Int a deriving Show
+
+getMRE :: (Int, a) -> MRE a
+getMRE (i, a) = if i == 1
+                  then Single a
+                  else Multiple i a
+
+modifiedEncoding :: Eq a => [a] -> [MRE a]
+modifiedEncoding xs = map getMRE $ encode xs
+
+
+-- Problem 12
+-- Decode modified run-length encoded data
+expandMRE :: MRE a -> [a]
+expandMRE (Single x) = [x]
+expandMRE (Multiple i x) = replicate i x
+
+
+decodeMREList :: [MRE a] -> [a]
+decodeMREList = flatten . map expandMRE
+    where flatten = foldr (++) [] 
+
+
+incrementMRE :: MRE a -> MRE a
+incrementMRE (Single x) = Multiple 2 x
+incrementMRE (Multiple n x) = Multiple (n + 1) x
+
+getMREVal :: MRE a -> a
+getMREVal (Single x) = x
+getMREVal (Multiple n x) = x
+
+-- Problem 13
+-- Run-length encoding data directly. Don't explicitly create the sublists containing the duplicates
+-- Only count them. As in problem P11, simplify the result list by replacing the singleton lists.
+modifiedEncoding' :: Eq a => [a] -> [MRE a] 
+modifiedEncoding' xs = foldr packMRE [] xs
+    where
+        packMRE x [] = [Single x]
+        packMRE x (y:ys) = if x == getMREVal y
+                                  then incrementMRE y:ys
+                                  else  Single x:y:ys
+
 
