@@ -146,7 +146,6 @@ decodeMREList :: [MRE a] -> [a]
 decodeMREList = flatten . map expandMRE
     where flatten = foldr (++) [] 
 
-
 incrementMRE :: MRE a -> MRE a
 incrementMRE (Single x) = Multiple 2 x
 incrementMRE (Multiple n x) = Multiple (n + 1) x
@@ -154,6 +153,7 @@ incrementMRE (Multiple n x) = Multiple (n + 1) x
 getMREVal :: MRE a -> a
 getMREVal (Single x) = x
 getMREVal (Multiple n x) = x
+
 
 -- Problem 13
 -- Run-length encoding data directly. Don't explicitly create the sublists containing the duplicates
@@ -165,5 +165,65 @@ modifiedEncoding' xs = foldr packMRE [] xs
         packMRE x (y:ys) = if x == getMREVal y
                                   then incrementMRE y:ys
                                   else  Single x:y:ys
+
+
+-- Problem 14
+dupList :: [a] -> [a]
+dupList xs = foldr (\x acc -> [x,x] ++ acc) [] xs
+
+
+-- Problem 15
+runN :: (a -> a) -> a -> Int -> a  
+runN _ x 0 = x
+runN fn x n = runN fn (fn x) (n - 1)
+
+upleList :: [a] -> Int -> [a]
+upleList [] _ = []
+upleList (x:xs) n = runN ((:)x) (upleList xs n) n
+
+
+-- Problem 16
+-- Drop every N'th element from a list.
+drop' :: Int -> [a] -> [a]
+drop' n xs =
+    map snd $ filter (not . isNth n . fst) $ zip [1..] xs
+    where
+        isNth x = (==0) . flip(mod) x 
+
+ 
+-- Problem 17
+-- SplitAt
+splitAt' :: [a] -> Int -> [[a]]
+splitAt' xs o = 
+        tupToList $ foldr splitAtN ([],[]) (zip [1..] xs)
+    where
+        tupToList (a, b) = [a, b]
+        splitAtN (n, x) (xs, ys)
+            | n <= o = (x:xs, ys)
+            | otherwise = (xs, x:ys)
+    
+    
+-- Problem 18
+-- Extract a slice from a list.
+slice' :: [a] -> Int -> Int -> [a]
+slice' xs s f = take (f - s + 1) $ drop (s - 1) xs
+
+
+-- Problem 19
+-- Rotate a list N places to the left.
+rotate' :: [a] -> Int -> [a]
+rotate' xs n = 
+    toListR $ splitAt' xs n'  
+    where
+        toListR (x:y:[]) = y++x
+        n' = n `mod` (length xs)
+
+
+-- Problem 20
+-- *Main> removeAt 2 "abcd"
+-- ('b',"acd")
+removeAt :: Int -> [a] -> (a, [a])
+removeAt n xs = (xs !! (n - 1), (take (n - 1) xs) ++ drop n xs)
+
 
 
