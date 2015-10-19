@@ -1,20 +1,12 @@
 -- https://wiki.haskell.org/H-99:_Ninety-Nine_Haskell_Problems
-module Problems
-( myLast
-, secondLast
-, nTh
-, len
-, myRev
-, pali
-, NestedList 
-, flatElem
-, dedup 
-, pack
-, pack'
-) where  
+module Problems where
 
 import Data.List
 import Data.Tuple
+import Debug.Trace
+import System.Random
+import Control.Monad
+import Data.Function
 
 
 -- Problem 1
@@ -225,5 +217,106 @@ rotate' xs n =
 removeAt :: Int -> [a] -> (a, [a])
 removeAt n xs = (xs !! (n - 1), (take (n - 1) xs) ++ drop n xs)
 
+
+-- Problem 21
+-- P21> insertAt 'X' "abcd" 2
+-- "aXbcd"
+insertAt :: a -> [a] -> Int -> [a]
+insertAt x xs n
+    | n < 1 = error "Index can't be less than 1"
+    | n > length xs = error "Index too big"
+    | otherwise = (fst listParts) ++ x : (snd listParts)
+    where
+        listParts = splitAt (n - 1) xs
+
+
+-- Problem 22
+-- Create a list containing all integers within a given range.
+-- * (range 4 9)
+-- (4 5 6 7 8 9)
+range :: Int -> Int -> [Int]
+range s f
+    | s > f = [s,(s - 1)..f]
+    | otherwise = [s..f]
+
+
+-- Problem 23
+-- * (rnd-select '(a b c d e f g h) 3)
+-- (E D A) 
+rndLessThan :: Int -> IO Int
+rndLessThan n = do
+    getStdRandom $ randomR(0, (n - 1))
+
+shuttleElement :: ([a],[a]) -> Int -> ([a],[a])
+shuttleElement (toXs, fromXs) n = 
+    let (x, newFrom) = removeAt (n + 1) fromXs
+    in (x:toXs, newFrom)
+
+shuttleRandElement :: IO ([a],[a]) -> IO ([a],[a])
+shuttleRandElement xs = do
+    xs' <- xs
+    r <- rndLessThan $ length $ snd xs'
+    return (shuttleElement xs' r)
+
+rndSelect :: [a] -> Int -> IO [a]
+rndSelect xs n = do
+    oldAndNew <- iterate shuttleRandElement (return ([], xs)) !! n
+    return (fst oldAndNew)
+
+
+-- Problem 24
+-- Lotto: Draw N different random numbers from the set 1..M.
+lottoN :: Int -> Int -> IO [Int]
+lottoN n r 
+    | n > r = error "You've got a pigeon-hole problem."
+    | otherwise = do
+        let xs = [1..r]
+        rndSelect xs n
+
+-- Problem 25
+-- Generate a random permutation of the elements of a list.
+rPermu :: [a] -> StdGen -> [a]
+rPermu xs g = 
+    let
+        lnXs = length xs
+        rIndTup = zip xs $ take lnXs $ nub $ randomRs (0, lnXs - 1) g 
+    in
+        map fst $ sortBy (compare `on` snd) rIndTup
+
+-- Problem 26
+-- (**) Generate the combinations of K distinct objects chosen from the N elements of a list
+combi :: Ord a => Eq a => Int -> [a] -> [[a]]
+combi n xs = filter (\x -> length x == n) $ nub $ map sort $ map nub $ replicateM n xs
+-- Pretty crappy, slow
+
+
+-- Problem 27
+-- Group the elements of a set into disjoint subsets.
+-- * (group '(aldo beat carla david evi flip gary hugo ida) '(2 2 5))
+-- ( ( (ALDO BEAT) (CARLA DAVID) (EVI FLIP GARY HUGO IDA) )
+-- ... )
+-- Note that we do not want permutations of the group members; i.e. ((ALDO BEAT) ...) is the same solution as ((BEAT ALDO) ...). However, we make a difference between ((ALDO BEAT) (CARLA DAVID) ...) and ((CARLA DAVID) (ALDO BEAT) ...).
+
+takeUnique :: Int -> ([a],[a],[a]) -> [([a],[a],[a])]
+takeUnique 0 (xs, ys, zs) = [([], ys, xs++zs)]
+takeUnique _ ([],_,_) = []
+takeUnique n (x:xs, ys, zs) = takeUnique (n-1) (xs, x:ys, zs)++ takeUnique n (xs, ys, x:zs)
+
+takeUnique' :: Int -> ([a],[[a]],[a]) -> [([a],[[a]],[a])]
+takeUnique' 0 (xs, ys, zs) = [(xs++zs, ys, [])]
+takeUnique' _ ([], yss, zs) = []
+takeUnique' n (x:xs, yss, zs) = takeUnique' (n-1) (xs, yss' ++ [ys++[x]], zs) ++ takeUnique' n (xs, yss, zs++[x])
+    where
+        ys = last yss
+        yss' = init yss
+
+tu'' :: Int -> [([a],[[a]],[a])] -> [([a],[[a]],[a])]
+tu'' n xs = collapse $ map (takeUnique' n) (map addEmpty xs)
+    where
+        addEmpty (xs, yss, zs) = (xs, yss ++ [[]], zs)
+        collapse xs = foldr (++) [] xs
+
+tu''' :: [Int] -> [a] -> [[[a]]]
+tu''' ns xs = map (\(x,y,z) -> y) $ foldl (flip tu'') [(xs, [],[])] ns
 
 
