@@ -432,10 +432,32 @@ primeR :: Int -> Int -> [Int]
 primeR start finish =  [x | x <- [start..finish], isPrime x] 
 
 -- Problem 40
+-- (**) Goldbach's conjecture.
+-- (goldbach 28) (5 23)
+
+goldbach :: Int -> (Int, Int)
+goldbach x
+    | odd x = error "Only goldbach only works for evens!"
+    | x == 2 = error "2 is too small"
+    | otherwise = gb x primes
+    where
+        primes = 2:[x | x <- [3,5..], isPrime x]
+        gb x (p:ps) = if isPrime $ x - p
+            then (p, x - p)
+            else gb x ps
 
 
 
+-- Problem 41
+-- (**) Given a range of integers by its lower and upper limit, print a list of all even numbers and their Goldbach composition.
 
+goldbachList :: Int -> Int -> [(Int, (Int,Int))]
+goldbachList low high 
+    | low == 2 || high == 2 = error "2 is too small"
+    | otherwise = map (\x -> (x, goldbach x)) [low,low+2..high]
+
+getBigGoldbachs :: Int -> Int -> Int -> [(Int, (Int, Int))]
+getBigGoldbachs low high floor = filter (\ (_, (p,q)) -> (p > floor && q > floor)) $ goldbachList low high
 
 
 
