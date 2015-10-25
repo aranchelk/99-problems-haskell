@@ -297,26 +297,148 @@ combi n xs = filter (\x -> length x == n) $ nub $ map sort $ map nub $ replicate
 -- ... )
 -- Note that we do not want permutations of the group members; i.e. ((ALDO BEAT) ...) is the same solution as ((BEAT ALDO) ...). However, we make a difference between ((ALDO BEAT) (CARLA DAVID) ...) and ((CARLA DAVID) (ALDO BEAT) ...).
 
-takeUnique :: Int -> ([a],[a],[a]) -> [([a],[a],[a])]
-takeUnique 0 (xs, ys, zs) = [([], ys, xs++zs)]
-takeUnique _ ([],_,_) = []
-takeUnique n (x:xs, ys, zs) = takeUnique (n-1) (xs, x:ys, zs)++ takeUnique n (xs, ys, x:zs)
 
-takeUnique' :: Int -> ([a],[[a]],[a]) -> [([a],[[a]],[a])]
-takeUnique' 0 (xs, ys, zs) = [(xs++zs, ys, [])]
-takeUnique' _ ([], yss, zs) = []
-takeUnique' n (x:xs, yss, zs) = takeUnique' (n-1) (xs, yss' ++ [ys++[x]], zs) ++ takeUnique' n (xs, yss, zs++[x])
+getUniqueGroups :: Int -> ([a],[[a]],[a]) -> [([a],[[a]],[a])]
+getUniqueGroups 0 (xs, ys, zs) = [(xs++zs, ys, [])]
+getUniqueGroups _ ([], yss, zs) = []
+getUniqueGroups n (x:xs, yss, zs) = getUniqueGroups (n-1) (xs, yss' ++ [ys++[x]], zs) ++ getUniqueGroups n (xs, yss, zs++[x])
     where
         ys = last yss
         yss' = init yss
 
-tu'' :: Int -> [([a],[[a]],[a])] -> [([a],[[a]],[a])]
-tu'' n xs = collapse $ map (takeUnique' n) (map addEmpty xs)
+toGroupsAddUG :: Int -> [([a],[[a]],[a])] -> [([a],[[a]],[a])]
+toGroupsAddUG n xs = collapse $ map (getUniqueGroups n) (map addEmpty xs)
     where
         addEmpty (xs, yss, zs) = (xs, yss ++ [[]], zs)
         collapse xs = foldr (++) [] xs
 
-tu''' :: [Int] -> [a] -> [[[a]]]
-tu''' ns xs = map (\(x,y,z) -> y) $ foldl (flip tu'') [(xs, [],[])] ns
+getAllGroupings :: [Int] -> [a] -> [[[a]]]
+getAllGroupings ns xs = map (\(x,y,z) -> y) $ foldl (flip toGroupsAddUG) [(xs, [],[])] ns
+
+-- Problem 28a
+-- Sorting a list of lists according to length of sublists
+-- Prelude>lsort ["abc","de","fgh","de","ijkl","mn","o"]
+-- Prelude>["o","de","de","mn","abc","fgh","ijkl"]
+
+sortByLength :: [[a]] -> [[a]]
+sortByLength = sortBy (compare `on` length)
+
+-- Problem 28b
+-- b) Again, we suppose that a list contains elements that are lists themselves. But this time the objective is to sort the elements of this list according to their length frequency; i.e., in the default, where sorting is done ascendingly, lists with rare lengths are placed first, others with a more frequent length come later.
+
+sortByRareLength :: Foldable t => [t a] -> [t a]
+sortByRareLength xs = foldr (++) [] $ sortByLength $ groupBy ((==) `on` length) xs
+
+-- Problem 31
+-- (**) Determine whether a given integer number is prime.
+primeTest :: Int -> Int -> Bool
+primeTest n x 
+    | x == n + 1 = True
+    | otherwise = if (x `isDivisibleBy` n)
+        then False
+        else primeTest (n + 1) x
+    where
+        isDivisibleBy x n = 0 == x `mod` n
+
+isPrime :: Int -> Bool
+isPrime x
+    | x == 1 = True
+    | x == 2 = True
+    | otherwise = primeTest 2 x
+
+
+-- Problem 32
+-- (**) Determine the greatest common divisor of two positive integer numbers. Use Euclid's algorithm.
+gcd' :: Int -> Int -> Int
+gcd' x y
+    | small == 0 = big 
+    | otherwise = gcd' small (big - small)
+    where
+        xy = if x > y
+            then (y,x)
+            else (x,y)
+        small = fst xy
+        big = snd xy
+
+
+-- Problem 33
+-- Determine whether two positive integer numbers are coprime. Two numbers are coprime if their greatest common divisor equals 1.
+coprime :: Int -> Int -> Bool
+coprime x y = 1 == (gcd' x y)
+
+
+-- Problem 34
+-- Calculate Euler's totient function phi(m).
+-- Euler's so-called totient function phi(m) is defined as the number of positive integers r (1 <= r < m) that are coprime to m.
+totient :: Int -> Int
+totient n = length [x | x <- [1..n], (gcd x n) == 1]
+
+
+-- Problem 35
+-- Determine the prime factors of a given positive integer. Construct a flat list containing the prime factors in ascending order.
+
+-- Doesn't factor, it lists unique prime factors, didn't read the question properly.
+getPrimeFactors :: Int -> [Int]
+getPrimeFactors n =
+    [x | x <- [1..maxTest], (isPrime x) && ((n `mod` x) == 0) ]
+    where maxTest = round $ sqrt $ fromIntegral n
+
+
+-- Factor
+-- Start counting up, if you find a value that mods even, keep dividing, if number isn't zero and mod isn't zero, count further.
+
+primeFactors :: Int -> [Int]
+primeFactors x = factorIt [] primes x
+    where
+        primes = 2: [x | x <- [3,5..], isPrime x]
+        factorIt acc _ 1 = acc
+        factorIt acc (p:ps) x = if (x `mod` p) == 0
+            then factorIt (p:acc) (p:ps) (x `div` p)
+            else factorIt acc ps x
+        
+        
+-- Problem 36
+-- (**) Determine the prime factors of a given positive integer.
+-- Construct a list containing the prime factors and their multiplicity.
+
+packTup x [] = [(x,1)]
+packTup x ((valA, quantA):cc) = if x == valA
+    then (valA, (quantA + 1)):cc
+    else (x,1):(valA, quantA):cc
+
+packTup' :: [Int] -> [(Int,Int)]
+packTup' = foldr packTup []
+
+mPrimeFactors :: Int -> [(Int, Int)]
+mPrimeFactors = packTup' . primeFactors
+
+
+-- Problem 37
+-- Calculate Euler's totient function phi(m) (improved).
+tot (p,m) = (p - 1) * p ^ (m - 1)
+
+--totient' = foldr (*) 0 $ map tot mPrimeFactors
+totient' = foldr (*) 1 . map tot . mPrimeFactors
+
+
+-- Problem 38
+-- (no solution required), totient' is an order of mag slower, did I screw that up?
+
+-- Problem 39
+-- (*) A list of prime numbers.
+-- Given a range of integers by its lower and upper limit, construct a list of all prime numbers in that range.
+
+primeR :: Int -> Int -> [Int]
+primeR start finish =  [x | x <- [start..finish], isPrime x] 
+
+-- Problem 40
+
+
+
+
+
+
+
+
 
 
