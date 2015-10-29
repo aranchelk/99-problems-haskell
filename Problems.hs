@@ -460,6 +460,65 @@ getBigGoldbachs :: Int -> Int -> Int -> [(Int, (Int, Int))]
 getBigGoldbachs low high floor = filter (\ (_, (p,q)) -> (p > floor && q > floor)) $ goldbachList low high
 
 
+-- Problem 46
+-- (**) Define predicates and/2, or/2, nand/2, nor/2, xor/2, impl/2 and equ/2 (for logical equivalence) which succeed or fail according to the result of their respective operations; e.g. and(A,B) will succeed, if and only if both A and B succeed.
+
+and' = (&&)
+or' = (||)
+nand' = (not .) . and'
+nor' = (not .) . or'
+xor' = (==) . not
+impl' x y = x
+equ' x y = x == y
+
+infixl 4 `or'`
+infixl 6 `and'`
+
+tableTest :: ( Bool -> Bool -> Bool) -> String
+tableTest fx =
+    let
+        testSc = replicateM 2 [True, False]
+        runTest (x:x':[]) = x : x' : [fx x x']
+    in
+        unlines $ map unwords $ map (map show) $ map runTest $ replicateM 2 [True, False]
+
+table :: (Bool -> Bool -> Bool) -> IO ()
+table fx = do putStr $ tableTest fx
+
+
+-- Problem 47
+-- answer from 46 produced the results listed without alteration, supposedly I had to change fixity
+
+-- Problem 48
+infixl 3 `equ'`
+-- infixl 7 `equ'`
+
+ttMap :: (Show a, Show r) => (a -> r) -> [a] -> [[Char]]
+ttMap _ [] = []
+ttMap f (x:xs) = ((show x) ++ " -> " ++ (show $ f x)) : ttMap f xs
+
+tt' :: Int -> ([Bool] -> Bool) -> [String]
+tt' n f =
+    let
+        testSc = replicateM n [True, False]
+    in
+        ttMap f testSc
+
+
+tableN = do (putStr .) . (unlines .) . tt'
+
+
+--Problem 49
+--(**) Gray codes.
+
+
+
+
+
+
+
+
+
 
 
 
