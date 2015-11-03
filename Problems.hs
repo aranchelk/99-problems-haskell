@@ -510,40 +510,33 @@ tableN = do (putStr .) . (unlines .) . tt'
 
 --Problem 49
 --(**) Gray codes.
-gTogglePos :: Int -> Int -> Int
-gTogglePos pX x
+
+findGrayIncrIndex :: Int -> Int -> Int
+findGrayIncrIndex pX x
     | odd x = 0
     | ((x + 2^(pX - 1)) `mod` (2^pX)) == 0 = pX - 1
-    | otherwise = gTogglePos (pX - 1) x
+    | otherwise = findGrayIncrIndex (pX - 1) x
 
-getBinBound :: Int -> Int
-getBinBound = (+1) . truncate . logBase 2 . fromIntegral 
-
-graySeedVal :: Num a => Int -> [a]
-graySeedVal nBit = take nBit $ repeat 0
-
-toggleBin x
+flipBit :: Int -> Int
+flipBit x
     | x == 0 = 1
     | x == 1 = 0
 
-toggleAt pos xs
+flipBitAt :: Int -> [Int] -> [Int]
+flipBitAt pos xs
     | pos > (length xs) - 1 = error "Position is out of bounds"
-    | otherwise = 
-        let
+    | otherwise = front ++ [flipBit elemX] ++ back
+        where 
             sp = splitAt (pos + 1) xs
             front = init $ fst sp
             elemX = last $ fst sp
             back = snd sp
-        in
-            front ++ [toggleBin elemX] ++ back
               
-printGray xs = foldr (++) [] $ map show $ reverse xs
+getGrays n = take (2^n) $ iterate (nextGray n) seed
+    where
+        seed = (0, take n $ repeat 0)
+        nextGray n (x, pr) = (x + 1, flipBitAt (findGrayIncrIndex n (x + 1)) pr)
 
-nextGray plX 0 [] = [graySeedVal plX]
-nextGray plX x (lastG:restG) = (toggleAt (gTogglePos plX x) lastG) : lastG : restG
+showGray (n, xs) = foldr (++) [] $ map show $ reverse xs
 
-getGrays plX = map printGray $ reverse $ foldl (flip n) [] [0..((2^plX) -1)] 
-    where n = nextGray plX
-
---Problem 50
-
+gray n = map showGray $ getGrays n
