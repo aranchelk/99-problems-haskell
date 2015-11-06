@@ -2,6 +2,7 @@
 module Problems where
 
 import Data.List
+import Data.Ord
 import Data.Tuple
 import Debug.Trace
 import System.Random
@@ -508,8 +509,9 @@ tt' n f =
 tableN = do (putStr .) . (unlines .) . tt'
 
 
---Problem 49
---(**) Gray codes.
+-- Problem 49
+-- (**) Gray codes.
+type Gray = [Bool] 
 
 findGrayIncrIndex :: Int -> Int -> Int
 findGrayIncrIndex pX x
@@ -517,26 +519,68 @@ findGrayIncrIndex pX x
     | ((x + 2^(pX - 1)) `mod` (2^pX)) == 0 = pX - 1
     | otherwise = findGrayIncrIndex (pX - 1) x
 
-flipBit :: Int -> Int
-flipBit x
-    | x == 0 = 1
-    | x == 1 = 0
-
-flipBitAt :: Int -> [Int] -> [Int]
-flipBitAt pos xs
+applyAt :: (a -> a) -> Int -> [a] -> [a]
+applyAt f pos xs
     | pos > (length xs) - 1 = error "Position is out of bounds"
-    | otherwise = front ++ [flipBit elemX] ++ back
+    | otherwise = front ++ [f elemX] ++ back
         where 
             sp = splitAt (pos + 1) xs
             front = init $ fst sp
             elemX = last $ fst sp
             back = snd sp
               
+getGrays :: Int -> [(Int, Gray)]
 getGrays n = take (2^n) $ iterate (nextGray n) seed
     where
-        seed = (0, take n $ repeat 0)
-        nextGray n (x, pr) = (x + 1, flipBitAt (findGrayIncrIndex n (x + 1)) pr)
+        seed = (0, take n $ repeat False)
+        nextGray n (x, pr) = (x + 1, applyAt not (findGrayIncrIndex n (x + 1)) pr)
 
-showGray (n, xs) = foldr (++) [] $ map show $ reverse xs
+grayToString :: Gray -> String
+grayToString xs = map gchar xs
+    where 
+        gchar x
+            | x == False = '0'
+            | x == True = '1'
 
+showGray :: (t, Gray) -> String
+showGray (n, xs) = grayToString $ reverse xs
+
+gray :: Int -> [String]
 gray n = map showGray $ getGrays n
+
+
+-- Problem 50
+-- (***) Huffman codes.
+data Tree a = EmptyTree | Node a (Tree a) (Tree a) deriving (Show, Read, Eq) 
+
+makeLeaf (x, f) = Node ((Just x), f, Nothing) EmptyTree EmptyTree
+
+getTrees xs = map makeLeaf xs
+
+getFreq (Node (_, f, _) _ _) = f
+compareFreq x y = compare (getFreq x) (getFreq y)
+
+leastFrequent xs = sortBy compareFreq xs
+
+mergeNode (x:x':xs) = (Node (Nothing, frqSum, Nothing) x x') : xs
+   where frqSum = (getFreq x) + (getFreq x')
+
+makeTree (t:[]) = [t]
+makeTree ts = makeTree $ mergeNode $ leastFrequent ts
+
+makeTree' = head . makeTree
+
+addEncodings c (Node (val, score, _) EmptyTree EmptyTree) = Node (val, score, Just c) EmptyTree EmptyTree
+addEncodings c (Node (val, score, _) l r) = Node (val, score, Just c) (addEncodings ('0':c) l) (addEncodings ('1':c) r)
+    
+flattenTree EmptyTree = []
+flattenTree (Node (Nothing, _, _) l r) = (flattenTree l) ++ (flattenTree r)
+flattenTree (Node ((Just val), _, (Just code)) l r) = [(val, (reverse code))] ++ (flattenTree l) ++ (flattenTree r) 
+
+
+huff xs = sortBy (comparing fst) $ flattenTree $ addEncodings "" $ makeTree' $ getTrees xs
+
+
+
+
+
