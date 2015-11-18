@@ -327,7 +327,7 @@ sortByLength = sortBy (compare `on` length)
 -- Problem 28b
 -- b) Again, we suppose that a list contains elements that are lists themselves. But this time the objective is to sort the elements of this list according to their length frequency; i.e., in the default, where sorting is done ascendingly, lists with rare lengths are placed first, others with a more frequent length come later.
 
-sortByRareLength :: Foldable t => [t a] -> [t a]
+--sortByRareLength :: Foldable t => [t a] -> [t a]
 sortByRareLength xs = foldr (++) [] $ sortByLength $ groupBy ((==) `on` length) xs
 
 -- Problem 31
@@ -579,6 +579,27 @@ flattenTree (Node ((Just val), _, (Just code)) l r) = [(val, (reverse code))] ++
 
 
 huff xs = sortBy (comparing fst) $ flattenTree $ addEncodings "" $ makeTree' $ getTrees xs
+
+
+-- Problem 56
+-- (**) Construct completely balanced binary trees
+-- data Tree a = EmptyTree | Node a (Tree a) (Tree a) deriving (Show, Read, Eq)
+
+baseTreeDepth n acc lim =
+    let nextAcc = (acc + (2^n))
+    in if nextAcc > lim
+        then n
+        else baseTreeDepth (n + 1) nextAcc lim
+
+baseTreeDepth' x = baseTreeDepth 0 0 x
+
+
+cbt 0 acc = acc
+cbt x acc = cbt (x-1) (Node 'x' acc acc)
+
+
+
+
 
 
 
