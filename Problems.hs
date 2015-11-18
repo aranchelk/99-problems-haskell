@@ -588,7 +588,7 @@ huff xs = sortBy (comparing fst) $ flattenTree $ addEncodings "" $ makeTree' $ g
 baseTreeDepth n acc lim =
     let nextAcc = (acc + (2^n))
     in if nextAcc > lim
-        then n
+        then (n, lim - acc)
         else baseTreeDepth (n + 1) nextAcc lim
 
 baseTreeDepth' x = baseTreeDepth 0 0 x
@@ -596,6 +596,18 @@ baseTreeDepth' x = baseTreeDepth 0 0 x
 
 cbt 0 acc = acc
 cbt x acc = cbt (x-1) (Node 'x' acc acc)
+
+cbt' x = cbt x EmptyTree
+ 
+
+addNode (p:[]) (Node a lTr rTr) 
+    | p == 'l' = Node a newTree  rTr
+    | otherwise = Node a lTr newTree
+    where newTree = Node 'x' EmptyTree EmptyTree
+addNode (p:ps) (Node a lTr rTr)
+    | p == 'l' = Node a (addNode ps lTr)  rTr
+    | otherwise = Node a lTr (addNode ps rTr)
+
 
 
 
