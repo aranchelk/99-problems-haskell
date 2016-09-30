@@ -593,13 +593,11 @@ baseTreeDepth n acc lim =
 
 baseTreeDepth' x = baseTreeDepth 0 0 x
 
-
 cbt 0 acc = acc
 cbt x acc = cbt (x-1) (Node 'x' acc acc)
 
 cbt' x = cbt x EmptyTree
  
-
 addNode (p:[]) (Node a lTr rTr) 
     | p == 'l' = Node a newTree  rTr
     | otherwise = Node a lTr newTree
@@ -609,7 +607,47 @@ addNode (p:ps) (Node a lTr rTr)
     | otherwise = Node a lTr (addNode ps rTr)
 
 
+data Btree a = Branch a (Btree a) (Btree a) | Empty deriving (Show, Eq)
 
+mirror1 Empty = Empty
+mirror1 (Branch x b1 b2) = Branch x b2 b1
+
+mirrorTree Empty = Empty
+mirrorTree (Branch x b1 b2) = Branch x (mirrorTree b2) (mirrorTree b1)
+
+isMirror a b = a == b'
+    where b' = mirrorTree b
+
+symmetric Empty = True 
+symmetric (Branch _ x y) = isMirror x y
+
+-- Problem 57
+-- ??
+
+-- Problem 58
+-- ??
+
+-- Problem 59
+-- (**) Construct height-balanced binary trees
+-- 
+-- In a height-balanced binary tree, the following property holds for every node: The height of its left subtree and the height of its right subtree are almost equal, which means their difference is not greater than one.
+-- 
+-- Construct a list of all height-balanced binary trees with the given element and the given maximum height.
+
+hbalTree1 a = tr
+    where
+        e = Empty
+        b = Branch a Empty Empty
+        allCombos = replicateM 2 [e, b]
+        tCons (x:y:[]) = Branch a x y 
+        tr = map tCons allCombos
+
+hbalTree 0 _ = [Empty]
+hbalTree 1 a = [Empty, (Branch a Empty Empty)]
+hbalTree n a = map tCons allCombos
+    where
+        allCombos = replicateM 2 $ hbalTree (n - 1) a
+        tCons (x:y:[]) = Branch a x y 
 
 
 
